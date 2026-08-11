@@ -1,0 +1,45 @@
+meta {
+  name: Create Book from ISBN
+  type: http
+  seq: 4
+}
+
+post {
+  url: {{baseUrl}}/books
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "isbn": "9782070368228"
+  }
+}
+
+docs {
+  # Create from a barcode alone
+
+  This is what the scan screen sends: no title, no author. The response comes
+  back nameless with `enrichment_status: "pending"` (or already enriched, if
+  another user added the same ISBN). Poll `GET /books/{id}` until the status
+  leaves `pending` and the edition's title/author appear.
+
+  A book posted with no ISBN still needs both a title and an author — there
+  would be nothing to look it up by otherwise.
+}
+
+script:post-response {
+  if (res.getStatus() === 201) {
+    bru.setEnvVar("bookId", res.getBody().id);
+  }
+}
+
+tests {
+  test("creates a book from an ISBN alone", function () {
+    expect(res.getStatus()).to.equal(201);
+    expect(res.getBody().id).to.be.a("string");
+    expect(res.getBody().isbn).to.equal("9782070368228");
+    // Title arrives asynchronously, from the shared edition.
+    expect(res.getBody().enrichment_status).to.be.oneOf(["pending", "enriched"]);
+  });
+}

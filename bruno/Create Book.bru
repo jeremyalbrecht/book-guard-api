@@ -1,0 +1,36 @@
+meta {
+  name: Create Book
+  type: http
+  seq: 3
+}
+
+post {
+  url: {{baseUrl}}/books
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "title": "La Carte et le Territoire",
+    "author": "Michel Houellebecq",
+    "isbn": "978-2-0812-4633-1",
+    "status": "reading",
+    "tags": ["spy", "cold-war"]
+  }
+}
+
+script:post-response {
+  // Save the new book's id so Get/Update/Delete can reuse it.
+  if (res.getStatus() === 201) {
+    bru.setEnvVar("bookId", res.getBody().id);
+  }
+}
+
+tests {
+  test("creates a book", function () {
+    expect(res.getStatus()).to.equal(201);
+    expect(res.getBody().id).to.be.a("string");
+    expect(res.getBody().status).to.equal("reading");
+  });
+}

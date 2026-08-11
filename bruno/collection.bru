@@ -1,0 +1,27 @@
+auth {
+  mode: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+docs {
+  # Ex-Libris API
+
+  A self-hosted book tracker. All /books routes require authentication; /healthz
+  is open.
+
+  ## Auth
+  Every book request sends `Authorization: Bearer {{token}}` (inherited from this
+  collection).
+
+  - **Local dev** (`AUTH_DISABLED=true`): the token is ignored — a static `dev`
+    user is used — so requests work with whatever `token` the environment holds.
+  - **Real OIDC** (Authelia): put a valid JWT access token in the environment's
+    `token` variable.
+
+  ## Flow
+  Run "Create Book" first — it saves the new id into the `bookId` environment
+  variable, which "Get / Update / Delete Book" then reuse.
+}

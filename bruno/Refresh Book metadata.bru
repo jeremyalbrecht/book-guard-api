@@ -1,0 +1,21 @@
+meta {
+  name: Refresh Book metadata
+  type: http
+  seq: 9
+}
+
+post {
+  url: {{baseUrl}}/books/{{bookId}}/refresh
+  body: json
+  auth: inherit
+}
+
+tests {
+  test("applies a partial update", function () {
+    expect(res.getStatus()).to.equal(200);
+    // PATCH is partial: title survives, the sent fields change.
+    expect(res.getBody().title).to.equal("La Taupe");
+    expect(res.getBody().status).to.equal("read");
+    expect(res.getBody().rating).to.equal(5);
+  });
+}

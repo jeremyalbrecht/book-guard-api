@@ -1,0 +1,18 @@
+meta {
+  name: List Books
+  type: http
+  seq: 4
+}
+
+get {
+  url: {{baseUrl}}/books
+  body: none
+  auth: inherit
+}
+
+tests {
+  test("returns the caller's books", function () {
+    expect(res.getStatus()).to.equal(200);
+    expect(res.getBody()).to.be.an("array");
+  });
+}

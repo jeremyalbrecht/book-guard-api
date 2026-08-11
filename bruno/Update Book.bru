@@ -1,0 +1,29 @@
+meta {
+  name: Update Book
+  type: http
+  seq: 7
+}
+
+patch {
+  url: {{baseUrl}}/books/{{bookId}}
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "status": "read",
+    "rating": 5,
+    "opinion": "A masterclass in slow-burn tension."
+  }
+}
+
+tests {
+  test("applies a partial update", function () {
+    expect(res.getStatus()).to.equal(200);
+    // PATCH is partial: title survives, the sent fields change.
+    expect(res.getBody().title).to.equal("La Taupe");
+    expect(res.getBody().status).to.equal("read");
+    expect(res.getBody().rating).to.equal(5);
+  });
+}

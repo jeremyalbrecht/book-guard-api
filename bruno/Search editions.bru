@@ -1,0 +1,49 @@
+meta {
+  name: Search editions
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{baseUrl}}/search?q=la taupe le carré&limit=5
+  body: none
+  auth: inherit
+}
+
+params:query {
+  q: la taupe le carré
+  limit: 5
+}
+
+docs {
+  # Search editions by title or author
+
+  Backs the suggestion list on the app's add screen, for a book whose barcode
+  cannot be scanned. Every result carries an ISBN, which is all `POST /books`
+  needs.
+
+  Two things to know about the results:
+
+  - Open Library returns *works*, not editions. The ISBN is a plausible edition
+    of the right book, not necessarily the copy in your hand — the title, year
+    and publisher shown are work-level too. Scanning the barcode is the accurate
+    path.
+  - Results with no usable ISBN are dropped, since nothing could be created
+    from them.
+
+  `q` must be at least 3 characters (422 otherwise). Repeat queries are served
+  from a 60-second in-process cache, so Open Library is not hit per keystroke.
+}
+
+tests {
+  test("returns candidate editions", function () {
+    expect(res.getStatus()).to.equal(200);
+    expect(res.getBody().results).to.be.an("array");
+  });
+
+  test("every result can be turned into a book", function () {
+    res.getBody().results.forEach(function (hit) {
+      expect(hit.isbn).to.be.a("string").and.not.empty;
+    });
+  });
+}

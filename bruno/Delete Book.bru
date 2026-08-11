@@ -1,0 +1,17 @@
+meta {
+  name: Delete Book
+  type: http
+  seq: 8
+}
+
+delete {
+  url: {{baseUrl}}/books/{{bookId}}
+  body: none
+  auth: inherit
+}
+
+tests {
+  test("deletes the book", function () {
+    expect(res.getStatus()).to.equal(204);
+  });
+}
