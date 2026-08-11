@@ -55,7 +55,10 @@ func (s *PostgresStore) Create(ctx context.Context, userID string, b *Book) erro
 	if b.Status == "" {
 		b.Status = StatusToRead
 	}
-	now := time.Now().UTC()
+	// Truncate to microseconds: Postgres timestamps only store that much
+	// precision, so keeping the extra nanoseconds here would make the in-memory
+	// value never equal what a later Get scans back.
+	now := time.Now().UTC().Truncate(time.Microsecond)
 	b.CreatedAt = now
 	b.UpdatedAt = now
 
@@ -156,7 +159,7 @@ func (s *PostgresStore) Update(ctx context.Context, userID string, b *Book) erro
 	// RETURNING clause reads back the stored value so b reflects reality, and a
 	// row owned by another user (or absent) yields no result rather than an update.
 	b.UserID = userID
-	now := time.Now().UTC()
+	now := time.Now().UTC().Truncate(time.Microsecond) // see Create: match Postgres timestamp precision
 	b.UpdatedAt = now
 
 	row := s.pool.QueryRow(ctx, `
