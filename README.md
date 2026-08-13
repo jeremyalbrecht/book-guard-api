@@ -68,6 +68,26 @@ See [`CLAUDE.md`](CLAUDE.md) for the full architecture and conventions reference
 
 Not yet packaged; eventual target is a Helm chart onto a home Kubernetes cluster behind Traefik + Authelia. For real OIDC, the Ex-Libris client in Authelia must issue JWT access tokens (RFC 9068), include a `groups` claim, and use an audience matching `OIDC_AUDIENCE`.
 
+### Releases
+
+Images are published to Docker Hub as `jeremyalbrecht/book-guard-api` by
+[`.github/workflows/docker-publish.yml`](.github/workflows/docker-publish.yml):
+
+- Every push to `main` (after tests pass) publishes `:latest` and `:sha-<commit>` —
+  useful for local/dev, but **not** what a Kubernetes `Deployment` should pin to,
+  since either tag can move or get overwritten by the next push.
+- Pushing a `vX.Y.Z` tag publishes immutable version tags instead: `:X.Y.Z` and
+  `:X.Y`. Cut a release with:
+
+  ```bash
+  git tag v1.2.3
+  git push origin v1.2.3
+  ```
+
+  Then point the Deployment manifest's `image:` at the fixed version, e.g.
+  `jeremyalbrecht/book-guard-api:1.2.3`, and bump it explicitly (PR/commit) each
+  release rather than tracking `latest`.
+
 ## Status
 
 Learning/personal project, under active development. Not built yet: Google Books fallback provider, LLM keyword extraction + embeddings, pgvector-based recommendations, price checking.

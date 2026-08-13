@@ -3,6 +3,7 @@ name: Docker
 on:
   push:
     branches: [main]
+    tags: ['v[0-9]+.[0-9]+.[0-9]+']
   pull_request:
     branches: [main]
 
@@ -43,9 +44,14 @@ jobs:
         id: meta
         with:
           images: ${{ env.IMAGE_NAME }}
+          # Version tags (vX.Y.Z pushes) produce immutable X.Y.Z / X.Y / X tags —
+          # that's what a Kubernetes Deployment should pin to. `main` pushes still
+          # publish `latest` + the commit sha, for local/dev use only.
           tags: |
             type=raw,value=latest,enable={{is_default_branch}}
-            type=sha,format=long
+            type=sha,format=long,enable=${{ github.ref_type != 'tag' }}
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
 
       - uses: docker/build-push-action@v6
         with:
