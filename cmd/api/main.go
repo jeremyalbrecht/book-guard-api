@@ -31,10 +31,15 @@ func main() {
 
 	// Enrichment runs in-process: the enqueuer feeds the worker, which fetches
 	// metadata/covers off the request path. worker is nil when ENRICH_DISABLED.
-	// One provider serves both the background worker and the synchronous search
-	// endpoint, so search keeps working when background enrichment is switched off.
-	provider := enrich.NewOpenLibraryProvider(
+	// Open Library is the primary source; it has gaps for small-press and
+	// non-English editions, so Google Books backstops it for Lookup/FetchCover.
+	// Search stays on Open Library alone (olProvider directly) — the fallback only
+	// applies to per-ISBN enrichment, not free-text search.
+	olProvider := enrich.NewOpenLibraryProvider(
 		os.Getenv("OPENLIBRARY_BASE_URL"), os.Getenv("OPENLIBRARY_COVERS_URL"))
+	gbProvider := enrich.NewGoogleBooksProvider(
+		os.Getenv("GOOGLEBOOKS_BASE_URL"), os.Getenv("GOOGLEBOOKS_API_KEY"))
+	provider := enrich.NewFallbackProvider(olProvider, gbProvider, logger)
 	enricher, worker := newEnricher(store, provider, logger)
 
 	handler := books.NewHandler(store, enricher, logger)
@@ -47,7 +52,7 @@ func main() {
 	api := newAPI(mux)
 	authMiddleware := newAuthMiddleware(api, logger)
 	handler.Register(api, authMiddleware)
-	search.NewHandler(provider, logger).Register(api, authMiddleware)
+	search.NewHandler(olProvider, logger).Register(api, authMiddleware)
 
 	mux.HandleFunc("GET /healthz", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)

@@ -241,36 +241,7 @@ func (p *OpenLibraryProvider) FetchCover(ctx context.Context, isbn string) (*Cov
 	}, nil
 }
 
-// get issues a GET with the required User-Agent, retrying a few times on transient
-// failures (network errors, 429, 5xx) with a small quadratic backoff.
+// get issues a GET with the required User-Agent, retrying transient failures.
 func (p *OpenLibraryProvider) get(ctx context.Context, rawURL string) (*http.Response, error) {
-	const maxAttempts = 3
-	var lastErr error
-	for attempt := 1; attempt <= maxAttempts; attempt++ {
-		req, err := http.NewRequestWithContext(ctx, http.MethodGet, rawURL, nil)
-		if err != nil {
-			return nil, err
-		}
-		req.Header.Set("User-Agent", userAgent)
-
-		resp, err := p.client.Do(req)
-		switch {
-		case err != nil:
-			lastErr = err
-		case resp.StatusCode == http.StatusTooManyRequests || resp.StatusCode >= 500:
-			resp.Body.Close()
-			lastErr = fmt.Errorf("status %d", resp.StatusCode)
-		default:
-			return resp, nil
-		}
-
-		if attempt < maxAttempts {
-			select {
-			case <-time.After(time.Duration(attempt*attempt) * 200 * time.Millisecond):
-			case <-ctx.Done():
-				return nil, ctx.Err()
-			}
-		}
-	}
-	return nil, fmt.Errorf("openlibrary request failed after %d attempts: %w", maxAttempts, lastErr)
+	return httpGetWithRetry(ctx, p.client, rawURL, userAgent)
 }
